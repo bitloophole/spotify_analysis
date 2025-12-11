@@ -1,0 +1,41 @@
+version: "3.8"
+
+services:
+  spark-master:
+    build: . # use the Dockerfile above
+    image: spark-with-pandas:3.5 # tag it so worker can reuse
+    container_name: spark-maste
+    hostname: spark-master
+    command: /opt/spark/bin/spark-class org.apache.spark.deploy.master.Master
+    environment:
+      - SPARK_MODE=master
+      - SPARK_MASTER_HOST=spark-master
+      - SPARK_MASTER_PORT=7077
+      - SPARK_MASTER_WEBUI_PORT=8080
+      # optional but nice for pandas UDFs
+      - SPARK_CONF_DIR=/opt/spark/conf
+    ports:
+      - "8080:8080" # Master Web UI
+      - "7077:7077" # Master Port
+    volumes:
+      - ./spark-apps:/opt/spark-apps
+      - ./spark-data:/opt/spark-data
+
+  spark-worker:
+    image: spark-with-pandas:3.5 # same image as master
+    container_name: spark-worker
+    hostname: spark-worker
+    command: /opt/spark/bin/spark-class org.apache.spark.deploy.worker.Worker spark://spark-master:7077
+    environment:
+      - SPARK_WORKER_CORES=2
+      - SPARK_WORKER_MEMORY=2g
+      - SPARK_WORKER_WEBUI_PORT=8081
+      # optional but nice for pandas UDFs
+      - SPARK_CONF_DIR=/opt/spark/conf
+    ports:
+      - "8081:8081" # Worker Web UI
+    depends_on:
+      - spark-master
+    volumes:
+      - ./spark-apps:/opt/spark-apps
+      - ./spark-data:/opt/spark-data
