@@ -17,6 +17,9 @@ spark = SparkSession.builder \
     .appName("SpotifySongPopularity") \
     .getOrCreate()
 
+spark.sparkContext.setLogLevel("WARN")
+
+
 # 1. Load dataset
 data_path = "/opt/spark-apps/data/spotify_songs.csv" 
 df = spark.read.csv(data_path, header=True, inferSchema=True)
@@ -137,6 +140,8 @@ print("Train count:", train.count(), "Test count:", test.count())
 reg_evaluator_rmse = RegressionEvaluator(labelCol="track_popularity", predictionCol="prediction", metricName="rmse")
 reg_evaluator_mae  = RegressionEvaluator(labelCol="track_popularity", predictionCol="prediction", metricName="mae")
 
+results = []
+
 def train_and_eval_regressor(model, name):
     start = time.time()
     m = model.fit(train)
@@ -144,6 +149,15 @@ def train_and_eval_regressor(model, name):
     preds = m.transform(test)
     rmse = reg_evaluator_rmse.evaluate(preds)
     mae  = reg_evaluator_mae.evaluate(preds)
+
+    results.append({
+        "model": name,
+        "type": "regression",
+        "time_sec": round(duration, 2),
+        "RMSE": round(rmse, 4),
+        "MAE": round(mae, 4),
+    })
+
     print(f"{name} => time: {duration:.2f}s, RMSE: {rmse:.4f}, MAE: {mae:.4f}")
     return m
 
@@ -169,6 +183,16 @@ def train_and_eval_classifier(model, name):
     auc = bin_eval_auc.evaluate(preds)
     acc = multi_eval_acc.evaluate(preds)
     f1  = multi_eval_f1.evaluate(preds)
+
+    results.append({
+        "model": name,
+        "type": "classification",
+        "time_sec": round(duration, 2),
+        "AUC": round(auc, 4),
+        "Accuracy": round(acc, 4),
+        "F1": round(f1, 4)
+    })
+
     print(f"{name} => time: {duration:.2f}s, AUC: {auc:.4f}, Acc: {acc:.4f}, F1: {f1:.4f}")
     return m
 
@@ -180,6 +204,11 @@ train_and_eval_classifier(rf_clf, "RandomForestClassifier")
 
 gbt_clf = GBTClassifier(featuresCol="features", labelCol="label_hit", maxIter=50, maxDepth=7)
 train_and_eval_classifier(gbt_clf, "GBTClassifier")
+
+print("\n==================== FINAL MODEL RESULTS ====================\n")
+for r in results:
+    print(r)
+print("\n=============================================================\n")
 
 # Stop Spark when done
 spark.stop()
