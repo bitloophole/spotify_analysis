@@ -1,3 +1,4 @@
+#Not in use do, not refer!!!
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import col, lower, regexp_replace, when
 from pyspark.ml import Pipeline
@@ -10,15 +11,21 @@ from pyspark.ml.evaluation import (
     RegressionEvaluator, BinaryClassificationEvaluator,
     MulticlassClassificationEvaluator
 )
+#from synapse.ml.lightgbm import LightGBMRegressor, LightGBMClassifier
+ 
 import time
 
 # 0. Setup
-spark = SparkSession.builder \
-    .appName("SpotifySongPopularity") \
+spark = (
+    SparkSession.builder
+    .appName("SpotifySongPopularity")
     .getOrCreate()
+)
+
+
+print(">>> RUNNING spotify.py WITH LIGHTGBM v2 <<<")
 
 spark.sparkContext.setLogLevel("WARN")
-
 
 # 1. Load dataset
 data_path = "/opt/spark-apps/data/spotify_songs.csv" 
@@ -27,9 +34,6 @@ df.printSchema()
 df.show(5, truncate=False)
 
 # 2. Inspect relevant columns
-# From Kaggle description: we expect columns like 'track_name', 'artist_name', 'popularity', 
-# and audio features such as 'danceability', 'energy', 'tempo', etc.
-# Check columns:
 print(df.columns)
 
 # 3. Filter & clean
@@ -97,7 +101,10 @@ if "genre" in df.columns:
     )
 else:
     # If no genre: create blank column
-    df = df.withColumn("genre_clean", lower(regexp_replace(col("track_name"), "[^a-zA-Z0-9\\s]", " ")))
+    df = df.withColumn(
+        "genre_clean",
+        lower(regexp_replace(col("track_name"), "[^a-zA-Z0-9\\s]", " "))
+    )
 
 # 5. NLP pipeline
 title_tokenizer = Tokenizer(inputCol="title_clean", outputCol="title_tokens")
@@ -109,14 +116,6 @@ title_w2v = Word2Vec(inputCol="title_tokens_clean", outputCol="title_w2v", vecto
 genre_tokenizer = Tokenizer(inputCol="genre_clean", outputCol="genre_tokens")
 genre_hashing_tf = HashingTF(inputCol="genre_tokens", outputCol="genre_tf", numFeatures=2**10)
 genre_idf = IDF(inputCol="genre_tf", outputCol="genre_tfidf")
-
-# # Select audio features you have in dataset, for example:
-# audio_features = []
-# for feat in ["danceability", "energy", "loudness", "tempo", "valence", "acousticness", "instrumentalness"]:
-#     if feat in df.columns:
-#         audio_features.append(feat)
-#     else:
-#         print(f"Warning: {feat} not in dataset columns")
 
 assembler_inputs = ["title_tfidf", "title_w2v", "genre_tfidf", "is_remix", "is_live"] + audio_features
 
@@ -161,14 +160,40 @@ def train_and_eval_regressor(model, name):
     print(f"{name} => time: {duration:.2f}s, RMSE: {rmse:.4f}, MAE: {mae:.4f}")
     return m
 
+# Linear Regression
 lr = LinearRegression(featuresCol="features", labelCol="track_popularity", maxIter=50, regParam=0.1)
 train_and_eval_regressor(lr, "LinearRegression")
 
-rf_reg = RandomForestRegressor(featuresCol="features", labelCol="track_popularity", numTrees=50, maxDepth=5, maxBins=32, subsamplingRate=0.7, featureSubsetStrategy="sqrt" )
+# Random Forest Regressor
+rf_reg = RandomForestRegressor(
+    featuresCol="features",
+    labelCol="track_popularity",
+    numTrees=50,
+    maxDepth=5,
+    maxBins=32,
+    subsamplingRate=0.7,
+    featureSubsetStrategy="sqrt"
+)
 train_and_eval_regressor(rf_reg, "RandomForestRegressor")
 
+# GBT Regressor
 gbt_reg = GBTRegressor(featuresCol="features", labelCol="track_popularity", maxIter=50, maxDepth=7)
 train_and_eval_regressor(gbt_reg, "GBTRegressor")
+
+# # LightGBM Regressor
+# lgbm_reg = LightGBMRegressor(
+#     featuresCol="features",
+#     labelCol="track_popularity",
+#     objective="regression",
+#     numIterations=100,
+#     learningRate=0.1,
+#     numLeaves=31,
+#     maxDepth=-1,          # -1 = no explicit max depth (controlled by numLeaves)
+#     baggingFraction=0.8,
+#     baggingFreq=1,
+#     featureFraction=0.8
+# )
+# train_and_eval_regressor(lgbm_reg, "LightGBMRegressor")
 
 # 8. Classification: hit or not
 bin_eval_auc = BinaryClassificationEvaluator(labelCol="label_hit", rawPredictionCol="rawPrediction", metricName="areaUnderROC")
@@ -196,14 +221,32 @@ def train_and_eval_classifier(model, name):
     print(f"{name} => time: {duration:.2f}s, AUC: {auc:.4f}, Acc: {acc:.4f}, F1: {f1:.4f}")
     return m
 
+# Logistic Regression
 log_reg = LogisticRegression(featuresCol="features", labelCol="label_hit", maxIter=50)
 train_and_eval_classifier(log_reg, "LogisticRegression")
 
+# Random Forest Classifier
 rf_clf = RandomForestClassifier(featuresCol="features", labelCol="label_hit", numTrees=100, maxDepth=10)
 train_and_eval_classifier(rf_clf, "RandomForestClassifier")
 
+# GBT Classifier
 gbt_clf = GBTClassifier(featuresCol="features", labelCol="label_hit", maxIter=50, maxDepth=7)
 train_and_eval_classifier(gbt_clf, "GBTClassifier")
+
+# # LightGBM Classifier
+# lgbm_clf = LightGBMClassifier(
+#     featuresCol="features",
+#     labelCol="label_hit",
+#     objective="binary",
+#     numIterations=100,
+#     learningRate=0.1,
+#     numLeaves=31,
+#     maxDepth=-1,          
+#     baggingFraction=0.8,
+#     baggingFreq=1,
+#     featureFraction=0.8
+# )
+# train_and_eval_classifier(lgbm_clf, "LightGBMClassifier")
 
 print("\n==================== FINAL MODEL RESULTS ====================\n")
 for r in results:
@@ -212,4 +255,3 @@ print("\n=============================================================\n")
 
 # Stop Spark when done
 spark.stop()
-

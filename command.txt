@@ -1,0 +1,15 @@
+
+docker exec -it spark-master-spotify /opt/spark/bin/spark-submit --master local[*] /opt/spark-apps/ingest_split_to_shared.py --input /opt/spark-data/spotify_master.csv --out /opt/spark-shared --tag master
+docker exec -it spark-worker-1-spotify /opt/spark/bin/spark-submit --master local[*] /opt/spark-apps/ingest_split_to_shared.py --input /opt/spark-data/spotify_w1.csv --out /opt/spark-shared --tag w1
+docker exec -it spark-worker-2-spotify /opt/spark/bin/spark-submit --master local[*] /opt/spark-apps/ingest_split_to_shared.py --input /opt/spark-data/spotify_w2.csv --out /opt/spark-shared --tag w2
+
+Part 1
+docker exec -it spark-master-spotify python3 /opt/spark-apps/run_part1.py
+
+Part 2 - Scenario 1 - Split Dataset
+docker exec -it spark-master-spotify /opt/spark/bin/spark-submit --master spark://spark-master:7077 --conf spark.cores.max=1 /opt/spark-apps/train_lr.py --mode split --split_tag w1 --shared_base /opt/spark-shared --out /opt/spark-apps/results/part2_s1_lr.json
+docker exec -it spark-master-spotify /opt/spark/bin/spark-submit --master spark://spark-master:7077 --conf spark.cores.max=3 /opt/spark-apps/train_rf.py --mode split --split_tag w2 --shared_base /opt/spark-shared --out /opt/spark-apps/results/part2_s1_rf.json
+
+Part 2 - Scenario 2 - INtegrated Dataset
+docker exec -it spark-master-spotify /opt/spark/bin/spark-submit --master spark://spark-master:7077 --conf spark.cores.max=1 /opt/spark-apps/train_lr.py --mode integrated --shared_base /opt/spark-shared --sample_frac 1.0 --out /opt/spark-apps/results/part2_s2_lr.json
+docker exec -it spark-master-spotify /opt/spark/bin/spark-submit --master spark://spark-master:7077 --conf spark.cores.max=3 /opt/spark-apps/train_rf.py --mode integrated --shared_base /opt/spark-shared --sample_frac 1.0 --out /opt/spark-apps/results/part2_s2_rf.json

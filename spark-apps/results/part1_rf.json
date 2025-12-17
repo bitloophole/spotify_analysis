@@ -1,0 +1,8 @@
+{
+  "algorithm": "RandomForestClassifier",
+  "mode": "integrated",
+  "split_tag": null,
+  "train_time_sec": 21.15,
+  "accuracy": 0.8484,
+  "rows_total": 32816
+}

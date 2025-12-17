@@ -1,0 +1,8 @@
+{
+  "algorithm": "LogisticRegression",
+  "mode": "split",
+  "split_tag": "w1",
+  "train_time_sec": 31.297,
+  "accuracy": 0.8055,
+  "rows_total": 10937
+}

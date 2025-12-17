@@ -1,0 +1,8 @@
+{
+  "algorithm": "RandomForestClassifier",
+  "mode": "split",
+  "split_tag": "w2",
+  "train_time_sec": 20.317,
+  "accuracy": 0.853,
+  "rows_total": 10941
+}
