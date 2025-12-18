@@ -30,40 +30,70 @@ def main():
     else:
         df = load_split_parquet(spark, args.shared_base, args.split_tag)
 
-    # Optional sampling for faster comparisons
     if args.sample_frac < 1.0:
         df = df.sample(False, args.sample_frac, seed=42)
 
     data = preprocess(df, repartition_n=12).cache()
-    data.count()  # materialize cache once
+    data.count()  # materialize cache
 
     train, test = data.randomSplit([0.8, 0.2], seed=42)
 
-    lr = LogisticRegression(featuresCol="features", labelCol="label_hit", maxIter=50)
+    lr = LogisticRegression(
+        featuresCol="features",
+        labelCol="label_hit",
+        maxIter=50
+    )
 
+    # -------------------
+    # Train model
+    # -------------------
     t0 = time.time()
     model = lr.fit(train)
     train_time = time.time() - t0
 
     preds = model.transform(test)
 
+    # -------------------
+    # Evaluators
+    # -------------------
     acc_eval = MulticlassClassificationEvaluator(
-        labelCol="label_hit", predictionCol="prediction", metricName="accuracy"
+        labelCol="label_hit",
+        predictionCol="prediction",
+        metricName="accuracy"
     )
-    acc = acc_eval.evaluate(preds)
 
+    precision_eval = MulticlassClassificationEvaluator(
+        labelCol="label_hit",
+        predictionCol="prediction",
+        metricName="weightedPrecision"
+    )
+
+    f1_eval = MulticlassClassificationEvaluator(
+        labelCol="label_hit",
+        predictionCol="prediction",
+        metricName="f1"
+    )
+
+    accuracy = acc_eval.evaluate(preds)
+    precision = precision_eval.evaluate(preds)
+    f1_score = f1_eval.evaluate(preds)
+
+    # -------------------
+    # Results
+    # -------------------
     result = {
         "algorithm": "LogisticRegression",
         "mode": args.mode,
         "split_tag": args.split_tag if args.mode == "split" else None,
+        "rows_total": data.count(),
         "train_time_sec": round(train_time, 3),
-        "accuracy": round(acc, 4),
-        "rows_total": data.count()
+        "accuracy": round(accuracy, 4),
+        "precision": round(precision, 4),
+        "f1_score": round(f1_score, 4)
     }
 
     print("RESULT:", result)
 
-    # Write result JSON to the shared mounted project folder
     with open(args.out, "w") as f:
         json.dump(result, f, indent=2)
 

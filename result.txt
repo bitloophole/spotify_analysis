@@ -1,9 +1,8 @@
-| Part       | Scenario   | Algorithm           | Data Mode  | Rows Used | Training Time (sec) |   Accuracy |
-| ---------- | ---------- | ------------------- | ---------- | --------: | ------------------: | ---------: |
-|   Part 1   | Sequential | Logistic Regression | Integrated |    32,816 |            16.457   |   0.8471   |
-|   Part 1   | Sequential | Random Forest       | Integrated |    32,816 |            21.150   |   0.8484   |
-|   Part 2   | Scenario 1 | Logistic Regression | Split (w1) |    10,937 |            31.297   |   0.8055   |
-|   Part 2   | Scenario 1 | Random Forest       | Split (w2) |    10,941 |            20.317   |   0.8530   |
-|   Part 2   | Scenario 2 | Logistic Regression | Integrated |    32,816 |            35.479   |   0.8471   |
-|   Part 2   | Scenario 2 | Random Forest       | Integrated |    32,816 |            35.093   |   0.8484   |
-
+| Part       | Scenario   | Algorithm           | Data Mode  | Rows Used | Train Time (sec) | Accuracy | Precision | F1-Score |
+| ---------- | ---------- | ------------------- | ---------- | --------: | ---------------: | -------: | --------: | -------: |
+|   Part 1   | Sequential | Logistic Regression | Integrated |    32,816 |           21.985 |   0.8471 |    0.8230 |  0.8302  |
+|   Part 1   | Sequential | Random Forest       | Integrated |    32,816 |           26.139 |   0.8484 |    0.7198 |  0.7788  |
+|   Part 2   | Scenario 1 | Logistic Regression | Split (w1) |    10,937 |           37.221 |   0.8055 |    0.8217 |  0.8130  |
+|   Part 2   | Scenario 1 | Random Forest       | Split (w2) |    10,941 |           38.848 |   0.8530 |    0.7276 |  0.7853  |
+|   Part 2   | Scenario 2 | Logistic Regression | Integrated |    32,816 |           48.604 |   0.8471 |    0.8230 |  0.8302  |
+|   Part 2   | Scenario 2 | Random Forest       | Integrated |    32,816 |           44.885 |   0.8484 |    0.7198 |  0.7788  |

@@ -2,7 +2,9 @@
   "algorithm": "RandomForestClassifier",
   "mode": "split",
   "split_tag": "w2",
-  "train_time_sec": 20.317,
+  "rows_total": 10941,
+  "train_time_sec": 38.848,
   "accuracy": 0.853,
-  "rows_total": 10941
+  "precision": 0.7276,
+  "f1_score": 0.7853
 }

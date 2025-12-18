@@ -2,7 +2,9 @@
   "algorithm": "LogisticRegression",
   "mode": "integrated",
   "split_tag": null,
-  "train_time_sec": 16.457,
+  "rows_total": 32816,
+  "train_time_sec": 21.985,
   "accuracy": 0.8471,
-  "rows_total": 32816
+  "precision": 0.823,
+  "f1_score": 0.8302
 }
